@@ -1,0 +1,96 @@
+// SOS-Games fork of Ashley 1.7.4 (Apache-2.0). See CHANGES.md.
+plugins {
+    id 'java-library'
+    id 'maven-publish'
+}
+
+group = 'io.github.sosgames'
+version = '1.7.4-sos.1'
+
+// On JitPack, publish under the coordinates JitPack serves (com.github.SOS-Games:ashley-fork:<tag>).
+def onJitPack = System.getenv('JITPACK') != null
+if (onJitPack) {
+    group = System.getenv('GROUP') ?: group
+    version = System.getenv('VERSION') ?: version
+}
+
+repositories {
+    mavenCentral()
+}
+
+java {
+    // Compiles for Java 17+ with whatever JDK runs Gradle (17, 21, ...). No toolchain download needed.
+    withSourcesJar()
+    withJavadocJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Javadoc).configureEach {
+    options.encoding = 'UTF-8'
+    options.addStringOption('Xdoclint:none', '-quiet')
+    title = 'Ashley Entity System API (SOS-Games fork)'
+}
+
+dependencies {
+    api "com.badlogicgames.gdx:gdx:${gdxVersion}"
+
+    testImplementation "junit:junit:${junitVersion}"
+    testImplementation "org.mockito:mockito-core:${mockitoVersion}"
+}
+
+test {
+    // Mockito 1.10 (cglib) needs reflective access to java.lang on Java 16+.
+    jvmArgs '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+    testLogging {
+        events 'failed'
+        exceptionFormat = 'full'
+    }
+}
+
+jar {
+    from(rootDir) {
+        include 'LICENSE', 'NOTICE', 'CHANGES.md'
+        into 'META-INF'
+    }
+    manifest {
+        attributes(
+            'Implementation-Title': 'Ashley (SOS-Games fork)',
+            'Implementation-Version': project.version,
+            'Automatic-Module-Name': 'com.badlogic.ashley'
+        )
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = onJitPack ? (System.getenv('ARTIFACT') ?: 'ashley') : 'ashley'
+            from components.java
+            pom {
+                name = 'Ashley (SOS-Games fork)'
+                description = 'Ashley 1.7.4 entity framework with generational entity refs, index-ordered iteration and multiple systems per class.'
+                url = 'https://github.com/SOS-Games/ashley-fork'
+                licenses {
+                    license {
+                        name = 'The Apache Software License, Version 2.0'
+                        url = 'https://www.apache.org/licenses/LICENSE-2.0.txt'
+                        distribution = 'repo'
+                    }
+                }
+                developers {
+                    developer { id = 'stbachmann'; name = 'Stefan Bachmann' }
+                    developer { id = 'saltares'; name = 'David Saltares' }
+                    developer { id = 'sos-games'; name = 'SOS-Games' }
+                }
+                scm {
+                    url = 'https://github.com/SOS-Games/ashley-fork'
+                    connection = 'scm:git:https://github.com/SOS-Games/ashley-fork.git'
+                }
+            }
+        }
+    }
+}
